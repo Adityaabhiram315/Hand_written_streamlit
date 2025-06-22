@@ -11,13 +11,14 @@ import pickle
 import os
 from io import BytesIO
 import base64
+import time
 
 # Page configuration
 st.set_page_config(
     page_title="MNIST CNN Model Dashboard",
     page_icon="🔢",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Custom CSS for better styling
@@ -27,17 +28,62 @@ st.markdown("""
         font-size: 3rem;
         font-weight: bold;
         text-align: center;
-        color: #1f77b4;
-        margin-bottom: 2rem;
+        color: #1e3a8a;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 3px solid #e5e7eb;
+    }
+    .section-header {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #1e3a8a;
+        margin: 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
     }
     .metric-container {
-        background-color: #f0f2f6;
+        background-color: #f1f5f9;
         padding: 1rem;
-        border-radius: 10px;
+        border-radius: 8px;
         margin: 0.5rem 0;
+        border-left: 4px solid #3b82f6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     .stSelectbox > div > div > select {
         background-color: #ffffff;
+    }
+    div.block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 4px 4px 0px 0px;
+        padding: 8px 16px;
+        background-color: #f8fafc;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #dbeafe;
+        border-bottom-color: #3b82f6;
+    }
+    /* Hide sidebar menu button */
+    section[data-testid="stSidebar"] {
+        display: none;
+    }
+    /* Hide top right menu button */
+    .st-emotion-cache-r421ms.e1y61itm0 {
+        display: none;
+    }
+    /* Card styling for container */
+    .card {
+        border-radius: 8px;
+        padding: 1.5rem;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -297,9 +343,36 @@ def create_accuracy_by_digit(model, X_test, y_test):
     
     return fig
 
+def create_digit_distribution_pie(y_test):
+    """Create pie chart showing distribution of digits in the test dataset"""
+    y_true = np.argmax(y_test, axis=1)
+    
+    # Count occurrences of each digit
+    digit_counts = {}
+    for digit in range(10):
+        count = np.sum(y_true == digit)
+        digit_counts[str(digit)] = count
+    
+    # Create pie chart
+    fig = px.pie(
+        values=list(digit_counts.values()),
+        names=list(digit_counts.keys()),
+        title='Test Dataset Digit Distribution',
+        hole=0.4,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+    
+    fig.update_layout(
+        title=dict(x=0.5, font=dict(size=20)),
+        legend_title="Digit",
+        height=400
+    )
+    
+    return fig
+
 # Main app
 def main():
-    st.markdown('<h1 class="main-header">🔢 MNIST CNN Model Dashboard</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header"> Aditya Handwritten Digits Classifier - IN005906</h1>', unsafe_allow_html=True)
     
     # Load data
     model, X_test, y_test, history = load_data_and_model()
@@ -307,122 +380,141 @@ def main():
     if model is None:
         st.error("Failed to load model or data. Please ensure 'mnist_cnn_model.h5' exists.")
         return
+
+    # Top container with model metrics overview
+    st.markdown('<div class="section-header">🔑 Key Performance Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     
-    # Sidebar
-    st.sidebar.title("Navigation")
-    page = st.sidebar.selectbox(
-        "Choose a page:",
-        ["🎯 Digit Generator", "📊 Model Metrics & Analytics"]    )
-    
-    if page == "🎯 Digit Generator":
-        st.header("🎯 Digit Sample Generator")
-        st.markdown("Enter a digit (0-9) to see the top 5 most confident predictions from the model:")
+    if history:
+        # Display final metrics
+        col1, col2, col3, col4 = st.columns(4)
         
-        # Use full width for better image display
-        digit = st.selectbox(
-            "Select digit:",
+        with col1:
+            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+            st.metric(
+                label="Training Accuracy",
+                value=f"{history['accuracy'][-1]:.1%}",
+                delta=f"{(history['accuracy'][-1] - history['accuracy'][0]):.1%}"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+            st.metric(
+                label="Validation Accuracy",
+                value=f"{history['val_accuracy'][-1]:.1%}",
+                delta=f"{(history['val_accuracy'][-1] - history['val_accuracy'][0]):.1%}"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+            st.metric(
+                label="Training Loss",
+                value=f"{history['loss'][-1]:.4f}",
+                delta=f"{history['loss'][-1] - history['loss'][0]:.4f}"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        with col4:
+            st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+            st.metric(
+                label="Validation Loss",
+                value=f"{history['val_loss'][-1]:.4f}",
+                delta=f"{history['val_loss'][-1] - history['val_loss'][0]:.4f}"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Interactive Digit Generator Section
+    st.markdown('<div class="section-header">🎯 Digit Sample Generator</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    
+    st.markdown("Select a digit to see the top 5 most confident predictions from the model:")
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        digit = st.select_slider(
+            "Choose a digit:",
             options=list(range(10)),
-            index=0,
-            help="Choose a digit from 0 to 9"
+            key="digit_selector"
         )
-        
-        generate_button = st.button("Generate Samples", type="primary")
-        
-        # Display images in full width when button is clicked
-        if generate_button:
-            with st.spinner("Generating samples..."):
-                fig = show_digit_samples(digit, model, X_test, y_test)
-                if fig:
-                    # Use full container width and make it responsive
-                    st.plotly_chart(fig, use_container_width=True, config={
-                        'displayModeBar': True,
-                        'displaylogo': False,
-                        'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d']
-                    })
     
-    elif page == "📊 Model Metrics & Analytics":
-        st.header("📊 Model Performance Analytics")
+    with col2:
+        generate_button = st.button("Generate Samples", type="primary", use_container_width=True)
+    
+    # Display images when button is clicked
+    if generate_button:
+        with st.spinner("Generating samples..."):
+            fig = show_digit_samples(digit, model, X_test, y_test)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True, config={
+                    'displayModeBar': True,
+                    'displaylogo': False,
+                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d', 'select2d']
+                })
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Model Analytics Section
+    st.markdown('<div class="section-header">📊 Model Performance Analytics</div>', unsafe_allow_html=True)
+    
+    # Training History
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    if history:
+        fig_metrics = plot_training_metrics(history)
+        st.plotly_chart(fig_metrics, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Two columns for confusion matrix and distribution pie chart
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Confusion Matrix")
+        with st.spinner("Generating confusion matrix..."):
+            cm_fig = create_confusion_matrix(model, X_test, y_test)
+            st.plotly_chart(cm_fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("Test Dataset Distribution")
+        with st.spinner("Generating distribution pie chart..."):
+            dist_fig = create_digit_distribution_pie(y_test)
+            st.plotly_chart(dist_fig, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Accuracy by Digit Chart (Full Width)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Accuracy by Digit")
+    with st.spinner("Calculating accuracy by digit..."):
+        acc_fig = create_accuracy_by_digit(model, X_test, y_test)
+        st.plotly_chart(acc_fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Model Details (Full Width)
+    model_expander = st.expander("Model Architecture Details", expanded=False)
+    with model_expander:
+        # Get model summary
+        summary_str = []
+        model.summary(print_fn=summary_str.append)
+        summary_text = '\n'.join(summary_str)
         
-        # Training metrics
-        st.subheader("📈 Training History")
-        if history:
-            fig_metrics = plot_training_metrics(history)
-            st.plotly_chart(fig_metrics, use_container_width=True)
-            
-            # Display final metrics
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                st.metric(
-                    label="Final Training Loss",
-                    value=f"{history['loss'][-1]:.4f}",
-                    delta=f"{history['loss'][-1] - history['loss'][0]:.4f}"
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with col2:
-                st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                st.metric(
-                    label="Final Training Accuracy",
-                    value=f"{history['accuracy'][-1]:.1%}",
-                    delta=f"{(history['accuracy'][-1] - history['accuracy'][0]):.1%}"
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with col3:
-                st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                st.metric(
-                    label="Final Validation Loss",
-                    value=f"{history['val_loss'][-1]:.4f}",
-                    delta=f"{history['val_loss'][-1] - history['val_loss'][0]:.4f}"
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            with col4:
-                st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-                st.metric(
-                    label="Final Validation Accuracy",
-                    value=f"{history['val_accuracy'][-1]:.1%}",
-                    delta=f"{(history['val_accuracy'][-1] - history['val_accuracy'][0]):.1%}"
-                )
-                st.markdown('</div>', unsafe_allow_html=True)
+        st.code(summary_text, language='text')
         
-        # Additional analytics
-        st.subheader("🔍 Detailed Analysis")
+        # Model info
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Model Parameters:**")
+            total_params = model.count_params()
+            st.write(f"Total parameters: {total_params:,}")
         
-        tab1, tab2, tab3 = st.tabs(["Confusion Matrix", "Accuracy by Digit", "Model Summary"])
-        
-        with tab1:
-            with st.spinner("Generating confusion matrix..."):
-                cm_fig = create_confusion_matrix(model, X_test, y_test)
-                st.plotly_chart(cm_fig, use_container_width=True)
-        
-        with tab2:
-            with st.spinner("Calculating accuracy by digit..."):
-                acc_fig = create_accuracy_by_digit(model, X_test, y_test)
-                st.plotly_chart(acc_fig, use_container_width=True)
-        
-        with tab3:
-            st.subheader("Model Architecture")
-            
-            # Get model summary
-            summary_str = []
-            model.summary(print_fn=summary_str.append)
-            summary_text = '\n'.join(summary_str)
-            
-            st.code(summary_text, language='text')
-            
-            # Model info
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**Model Parameters:**")
-                total_params = model.count_params()
-                st.write(f"Total parameters: {total_params:,}")
-            
-            with col2:
-                st.markdown("**Input Shape:**")
-                st.write(f"Input shape: {model.input_shape}")
+        with col2:
+            st.markdown("**Input Shape:**")
+            st.write(f"Input shape: {model.input_shape}")
 
 if __name__ == "__main__":
     main()
