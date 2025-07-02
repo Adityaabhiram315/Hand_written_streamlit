@@ -11,6 +11,14 @@ A comprehensive Streamlit web application for visualizing MNIST CNN model perfor
 - **Beautiful Visualizations**: Grayscale heatmaps with hover information
 
 <img width="720" alt="image" src="https://github.com/user-attachments/assets/8fe8a58a-eadb-41c8-b5f3-51bb9c3d19f2" />
+<img width="720" alt="image" src="https://github.com/user-attachments/assets/f57d209c-8932-4f6e-8535-d657ad6ca632" />
+<img width="720" alt="image" src="https://github.com/user-attachments/assets/48cb9f43-f91a-4b0a-a979-946d9ceaaf1a" />
+<img width="720" alt="image" src="https://github.com/user-attachments/assets/d3d61ea9-fc00-44b0-84ab-4a0cf4387c75" />
+<img width="720" alt="image" src="https://github.com/user-attachments/assets/f070cba9-6ae6-4db1-917c-185f40d6b0e0" />
+
+
+
+
 
 
 ### 📊 Model Metrics & Analytics Page
