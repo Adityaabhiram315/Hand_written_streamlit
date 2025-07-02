@@ -10,7 +10,7 @@ A comprehensive Streamlit web application for visualizing MNIST CNN model perfor
 - **Confidence Scores**: Each sample displays the model's confidence score
 - **Beautiful Visualizations**: Grayscale heatmaps with hover information
 
-<img width="1440" alt="image" src="https://github.com/user-attachments/assets/8fe8a58a-eadb-41c8-b5f3-51bb9c3d19f2" />
+<img width="720" alt="image" src="https://github.com/user-attachments/assets/8fe8a58a-eadb-41c8-b5f3-51bb9c3d19f2" />
 
 
 ### 📊 Model Metrics & Analytics Page
